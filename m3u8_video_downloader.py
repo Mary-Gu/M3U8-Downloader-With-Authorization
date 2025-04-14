@@ -81,7 +81,7 @@ class M3U8Downloader:
 
     def setup_window_size(self):
         window_width = 900
-        window_height = 650
+        window_height = 750
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
         center_x = int(screen_width/2 - window_width/2)
@@ -253,7 +253,7 @@ class M3U8Downloader:
 
     def create_progress_section(self):
         progress_frame = tk.Frame(self.main_frame, bg="#f5f5f5")
-        progress_frame.grid(row=5, column=0, columnspan=2, sticky="ew", pady=(10, 20))
+        progress_frame.grid(row=6, column=0, columnspan=2, sticky="ew", pady=(10, 20))
         progress_frame.columnconfigure(0, weight=1)
 
         self.progress_var = tk.DoubleVar(value=0.0)
@@ -495,27 +495,59 @@ class M3U8Downloader:
             segment_idx = start_idx + i
             segment_path = os.path.join(self.temp_dir, "segments", f"{segment_idx}.ts")
 
-            try:
-                response = requests.get(url, timeout=10)
-                if response.status_code == 200:
-                    with open(segment_path, "wb") as f:
-                        f.write(response.content)
+            # 添加重试机制
+            retry_count = 0
+            max_retries = 5
+            download_success = False
 
-                    # 更新进度
-                    with self.download_lock:
-                        self.downloaded_segments += 1
-                        progress = (self.downloaded_segments / self.total_segments) * 100
-                        self.update_progress(
-                            f"下载中: {self.downloaded_segments}/{self.total_segments} 片段", 
-                            progress
-                        )
-                else:
-                    print(f"下载片段 {segment_idx} 失败: HTTP {response.status_code}")
-            except Exception as e:
-                print(f"下载片段 {segment_idx} 时发生错误: {str(e)}")
+            while retry_count < max_retries and not download_success:
+                try:
+                    response = requests.get(url, timeout=15)  # 增加超时时间
+                    if response.status_code == 200:
+                        with open(segment_path, "wb") as f:
+                            f.write(response.content)
+                        download_success = True
+                    else:
+                        retry_count += 1
+                        if retry_count >= max_retries:
+                            print(f"下载片段 {segment_idx} 失败: HTTP {response.status_code}，重试 {retry_count} 次后放弃")
+                        else:
+                            print(f"下载片段 {segment_idx} 失败: HTTP {response.status_code}，正在重试 ({retry_count}/{max_retries})...")
+                            time.sleep(1)  # 重试前等待1秒
+                except Exception as e:
+                    retry_count += 1
+                    if retry_count >= max_retries:
+                        print(f"下载片段 {segment_idx} 时发生错误: {str(e)}，重试 {retry_count} 次后放弃")
+                    else:
+                        print(f"下载片段 {segment_idx} 时发生错误: {str(e)}，正在重试 ({retry_count}/{max_retries})...")
+                        time.sleep(2)  # 网络错误后等待2秒再重试
+
+            # 更新进度
+            if download_success:
+                with self.download_lock:
+                    self.downloaded_segments += 1
+                    # 记录失败的片段
+                    if not hasattr(self, 'failed_segments'):
+                        self.failed_segments = []
+                    
+                    progress = (self.downloaded_segments / self.total_segments) * 100
+                    self.update_progress(
+                        f"下载中: {self.downloaded_segments}/{self.total_segments} 片段", 
+                        progress
+                    )
+            else:
+                # 记录失败的片段
+                with self.download_lock:
+                    if not hasattr(self, 'failed_segments'):
+                        self.failed_segments = []
+                    self.failed_segments.append(segment_idx)
 
     def parallel_merge(self, segments, final_output):
         """使用分治法多线程合并视频片段"""
+        print("上述片段已下载完成，正在合并...")
+        self.update_progress("正在合并视频片段...", 0)
+        print("等待3s后开始合并...")
+        time.sleep(3)
         try:
             # 如果片段数量太少，直接合并
             if len(segments) <= 8:
