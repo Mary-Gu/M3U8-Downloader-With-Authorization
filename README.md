@@ -1,74 +1,93 @@
-# M3U8-Downloader-With-Authorization
+# M3U8 Downloader with Authorization Support
 
-## Overview
-This is a Python-based GUI tool for downloading videos from M3U8 URLs, including those with authentication parameters after `?`. It uses `ffmpeg` to handle the downloading process and ensures that the entire URL, including query parameters, is preserved for proper access.
+A powerful Python-based GUI tool for downloading videos from M3U8 playlists — including authenticated streams with query parameters. Built with tkinter and powered by ffmpeg, this tool supports parallel downloading, automatic merging, and quality control.
 
-## What is M3U8?
-M3U8 is a file format used for streaming videos over the internet. It contains a list of media segments (small video files) that are played sequentially to form a complete video. Streaming services use M3U8 to provide adaptive bitrate streaming, where different video qualities are available based on the viewer's internet speed.
+## 🔍 What is M3U8?
 
-However, since M3U8 only provides a playlist of video chunks rather than a single file, directly downloading an M3U8 link will not give you a playable video. This tool uses `ffmpeg` to download and merge these chunks into a single MP4 file.
+M3U8 is a playlist format used for HTTP Live Streaming (HLS). It contains links to video segments (usually .ts files) that are streamed in sequence. Simply downloading the M3U8 file won't give you a complete video — you must fetch, order, and combine all segments.
 
-## Features
-- **Supports authentication parameters**: Can download videos even when the M3U8 link contains authentication tokens or query parameters.
-- **User-friendly GUI**: Built with `tkinter` for easy interaction.
-- **Custom save location**: Choose where to save the downloaded video.
-- **Multi-threading support**: Keeps the interface responsive while downloading videos.
-- **Real-time download animation**: Shows progress with a dynamic loading indicator.
-- **Video quality options**:
-  - **High Quality (Original Size)**: No re-encoding, full resolution.
-  - **Medium Quality (Smaller File Size)**: Compressed with H.264 for a balance of quality and size.
-  - **Low Quality (Smallest File Size)**: Highly compressed for minimal storage.
-- **Optimized for high DPI screens**: Especially useful for Windows users with high-resolution displays.
+This tool automates that process and outputs a playable .mp4 file.
 
-## Requirements
-- **Python 3.x**
-- **FFmpeg** installed and available in the system PATH
+## ✨ Features
 
-## Installation
-1. **Install Python 3**: [Download Python](https://www.python.org/downloads/)
-2. **Install FFmpeg**:
-   - **Windows**: Download from [FFmpeg official site](https://ffmpeg.org/download.html) and add it to system PATH.
-   - **macOS (via Homebrew)**: Run `brew install ffmpeg`
-   - **Linux**:
-     - Debian/Ubuntu: `sudo apt install ffmpeg`
-     - Fedora: `sudo dnf install ffmpeg`
+- ✅ Supports Authenticated M3U8 URLs: Fully preserves query parameters (after ?) for token-based access.
+- 🎛️ User-Friendly GUI: Simple and clean interface built with tkinter.
+- 💾 Custom Save Path and Filename: Auto-fills name from URL, with .mp4 extension appended.
+- ⚡ Multi-threaded Segment Download: Downloads segments in parallel for higher speed.
+- 🧠 Parallel Merge with Divide-and-Conquer: Fast and efficient merging of .ts segments.
+- 🔁 Retry on Failure: Segments will retry download up to 5 times automatically.
+- 🎚️ Video Quality Selection:
+  - High – Original resolution, no re-encoding.
+  - Medium – Compressed using libx264 at crf=23.
+  - Low – Highly compressed, smaller file size.
+- 🖥️ HiDPI Display Support: Looks great on high-resolution displays (Windows-compatible).
 
-## How It Works
-1. **Launch the script**:
-   ```sh
-   python m3u8_video_downloader.py
-   ```
-2. **Enter the M3U8 URL**, including any parameters after `?` (e.g., authentication tokens). 
-   - The script provides an example URL: `https://example.com/video.m3u8?parse1=1&parse2=2etc`. This illustrates how query parameters (`?parse1=1&parse2=2etc`) must be included in order to access protected streams.
-   - Many M3U8 downloaders online fail to support query parameters, making this tool unique in its ability to handle them properly.
-3. **Choose where to save the video**.
-4. **Select video quality**:
-   - **High Quality**: No compression, original size.
-   - **Medium Quality**: Compressed using H.264 codec.
-   - **Low Quality**: Highly compressed for minimum file size.
-5. **Click the "Download" button**.
-6. **What happens next?**
-   - The script starts a background thread to download the video.
-   - A loading animation appears to indicate progress.
-   - `ffmpeg` processes the M3U8 file, downloads video segments, and merges them into an MP4 file.
-   - Once complete, a success message appears.
+## 🧰 Requirements
 
-## Common Issues and Solutions
-- **The download fails immediately**:
-  - Check if the M3U8 URL is correct and includes all required authentication parameters.
-  - Test the URL in a web browser to see if it plays the video.
-  - Ensure `ffmpeg` is installed and correctly added to the system PATH.
+- Python 3.x
+- ffmpeg installed and available in system PATH
 
-- **The downloaded video has no audio**:
-  - Some M3U8 files have separate audio tracks. Ensure your URL includes both video and audio.
-  - Modify the `ffmpeg` command to manually merge audio if necessary.
+## 🚀 Installation
 
-- **The video is slow or laggy**:
-  - Try selecting "High Quality" to avoid re-encoding.
-  - Check your computer’s performance during the download process.
+1. Install Python 3.x: https://www.python.org/downloads/
+2. Install FFmpeg:
+   - Windows: Download from https://ffmpeg.org/download.html and add to PATH
+   - macOS: brew install ffmpeg
+   - Ubuntu/Debian: sudo apt install ffmpeg
+   - Fedora: sudo dnf install ffmpeg
 
-## License
-This project is open-source and free to use. Modify it as needed!
+## ▶️ How to Use
 
-## Final Thoughts
-This tool is ideal for downloading M3U8 videos quickly and efficiently while keeping the interface responsive. It is particularly useful for beginners who want a simple way to save streaming videos to their local storage without dealing with complex command-line options in `ffmpeg`.
+Step 1: Launch the program
+```bash
+    python m3u8_video_downloader.py
+```
+Step 2: Paste the full M3U8 URL (including authentication parameters if any), for example:
+
+    https://example.com/video.m3u8?token=abc123&expires=1680000000
+
+Step 3: Choose the save location and filename
+
+Step 4: Select the video quality:
+- High Quality (Original size)
+- Medium Quality (Balanced compression)
+- Low Quality (Highly compressed)
+
+Step 5: Adjust download thread count (optional)
+
+Step 6: Click the "Download" button
+
+The tool will:
+- Fetch and parse the M3U8 playlist
+- Download all .ts video segments using multithreading
+- Retry failed segments automatically (up to 5 times)
+- Merge all segments using ffmpeg with multi-stage parallelism
+- Transcode the video depending on quality selection
+- Save the result as an MP4 file
+
+## 🛠 Troubleshooting
+
+### ❌ Download fails immediately
+- Ensure the M3U8 URL is complete and includes all required parameters.
+- Try opening the URL in a browser to confirm it's valid.
+- Make sure ffmpeg is installed and included in the system PATH.
+
+### 🔇 No audio in the output
+- Some streams provide video and audio as separate playlists.
+- Use the full master playlist instead, or manually merge audio using ffmpeg.
+
+### 🐢 Video playback is laggy
+- Use "High Quality" to skip transcoding.
+- Make sure your system has enough CPU resources during merging.
+
+## 🪪 License
+
+This project is open-source and free to use under the MIT License. Modify and redistribute freely.
+
+## ❤️ Final Thoughts
+
+This tool is ideal for anyone who needs to download authenticated M3U8 videos with full control, especially when query parameters are involved. It simplifies complex ffmpeg operations into a GUI-based workflow for faster, friendlier access.
+
+---
+
+✨ Built with threads, tkinter, and ffmpeg.
