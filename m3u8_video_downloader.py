@@ -298,7 +298,7 @@ class M3U8Downloader:
         tip_icon.grid(row=0, column=0, sticky="w")
 
         tip_label = tk.Label(tip_frame, 
-                           text="提示: 1. 多线程加速下载  2. 视频质量越低，文件越小，速度越快  3. 确保已安装FFmpeg", 
+                           text="提示: 1. 多线程加速下载  2. 视频质量越低，文件越小，速度越快  3. 确保已安装FFmpeg  4. 自动修复时间轴，保证与Whisper对齐",
                            font=("SimHei", self.FONT_SIZE-6), 
                            bg="#e8f4f8", fg="#34495e",
                            justify=tk.LEFT, wraplength=750, padx=5, pady=10)
@@ -691,6 +691,43 @@ class M3U8Downloader:
                     "-i", segments_file, "-c:v", "libx264", 
                     "-preset", "faster", "-crf", "28", 
                     "-c:a", "aac", "-b:a", "96k", output_path
+                ]
+
+            subprocess.run(command, check=True)
+        except subprocess.CalledProcessError as e:
+            self.show_error(f"视频合并失败: {str(e)}")
+        except Exception as e:
+            self.show_error(f"视频合并时发生错误: {str(e)}")
+
+    def convert_video(self, segments_file, output_path):
+        try:
+            quality = self.quality_var.get()
+
+            # 基础命令，添加时间轴修正参数
+            base_cmd = [
+                "ffmpeg", "-f", "concat", "-safe", "0", 
+                "-i", segments_file,
+                "-copyts", "-start_at_zero", "-reset_timestamps", "1"  # 修复时间轴
+            ]
+
+            # 根据所选质量设置生成FFmpeg命令
+            if quality == "高质量 (原始大小)":
+                command = base_cmd + ["-c", "copy", output_path]
+            elif quality == "中等质量 (较小体积)":
+                command = base_cmd + [
+                    "-c:v", "libx264", 
+                    "-preset", "medium", "-crf", "23", 
+                    "-c:a", "aac", "-b:a", "128k",
+                    "-af", "asetpts=PTS-STARTPTS",  # 确保音频时间轴从0开始
+                    output_path
+                ]
+            else:  # 低质量
+                command = base_cmd + [
+                    "-c:v", "libx264", 
+                    "-preset", "faster", "-crf", "28", 
+                    "-c:a", "aac", "-b:a", "96k",
+                    "-af", "asetpts=PTS-STARTPTS",  # 确保音频时间轴从0开始
+                    output_path
                 ]
 
             subprocess.run(command, check=True)
